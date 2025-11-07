@@ -89,7 +89,8 @@ from src.editor import VideoEditor, create_preview
         "moba",
         "extract_shooter",
         "quick_extract",
-        "quick_fps"
+        "quick_fps",
+        "debug_permissive"
     ]),
     default=None,
     help="Preset de configuration par type de jeu.",

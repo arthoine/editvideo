@@ -368,3 +368,21 @@ presets:
     editing:
       encoding_preset: "fast"  # Encodage rapide
       crf: 23  # Qualité légèrement réduite pour vitesse
+
+  debug_permissive:
+    # DEBUG: Seuils très bas pour détecter tous les moments
+    # Utilisez pour voir ce qui est détecté dans la vidéo
+    analysis:
+      audio_threshold: 0.45  # Très permissif
+      scene_threshold: 20.0
+      min_segment_duration: 5
+      max_segment_duration: 60
+      context_before: 2.0
+      context_after: 2.5
+      audio_weight: 0.35
+      visual_weight: 0.25
+      llava_weight: 0.40
+      llava_prompt_type: "extract_shooter"
+      llava_frame_sampling: 90
+      llava_max_frames: 200
+      llava_intensity_threshold: 35.0  # Très permissif pour debug
