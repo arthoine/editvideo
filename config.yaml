@@ -421,3 +421,5 @@ presets:
       transition_duration: 0.8  # Transition plus douce
       encoding_preset: "medium"
       crf: 17  # Qualité MAXIMALE pour YouTube (17 = quasi-lossless visuel)
+      output_fps: 30  # Préserve FPS source (pas d'interpolation = meilleure qualité)
+      output_resolution: "1920x1080"  # Full HD standard

@@ -213,9 +213,40 @@ class VideoEditor:
             # Construire la commande FFmpeg
             cmd = ["ffmpeg", "-f", "concat", "-safe", "0", "-i", str(concat_file)]
 
-            # Filtres vidéo
-            vf_filters = [f"scale={resolution}", f"fps={fps}"]
-            cmd.extend(["-vf", ",".join(vf_filters)])
+            # Détecter résolution/FPS source depuis le premier segment
+            try:
+                probe = ffmpeg.probe(segment_paths[0])
+                video_stream = next(s for s in probe['streams'] if s['codec_type'] == 'video')
+                source_width = int(video_stream['width'])
+                source_height = int(video_stream['height'])
+                source_fps = eval(video_stream.get('r_frame_rate', '30/1'))
+
+                logger.info(f"Source: {source_width}x{source_height} @ {source_fps:.2f} FPS")
+            except Exception as e:
+                logger.warning(f"Impossible de détecter résolution source: {e}")
+                source_width, source_height, source_fps = 1920, 1080, 30
+
+            # Filtres vidéo : appliquer UNIQUEMENT si nécessaire
+            vf_filters = []
+
+            # Scaling uniquement si résolution différente
+            target_width, target_height = map(int, resolution.split('x'))
+            if source_width != target_width or source_height != target_height:
+                vf_filters.append(f"scale={resolution}")
+                logger.info(f"Scaling: {source_width}x{source_height} → {resolution}")
+            else:
+                logger.info("Résolution identique, pas de scaling (préserve qualité)")
+
+            # FPS uniquement si différent
+            if abs(source_fps - fps) > 0.5:
+                vf_filters.append(f"fps={fps}")
+                logger.info(f"FPS change: {source_fps:.2f} → {fps}")
+            else:
+                logger.info("FPS identique, pas d'interpolation (préserve qualité)")
+
+            # Appliquer les filtres seulement s'il y en a
+            if vf_filters:
+                cmd.extend(["-vf", ",".join(vf_filters)])
 
             # Encodage
             if self.use_gpu and codec == "h264":
