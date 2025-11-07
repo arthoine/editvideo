@@ -282,13 +282,19 @@ class LLaVAAnalyzer:
             # Sélectionner le prompt
             prompt = self.gaming_prompts.get(prompt_type, self.gaming_prompts["general"])
 
-            # Appeler LLaVA via Ollama avec mode JSON forcé
+            # Appeler LLaVA via Ollama avec mode JSON forcé et optimisations
             response = ollama.generate(
                 model=self.model_name,
                 prompt=prompt,
                 images=[image_b64],
-                stream=False,
+                stream=False,  # Attendre réponse complète (requis pour JSON parsing)
                 format="json",  # Force la sortie en JSON valide
+                options={
+                    "temperature": 0.2,      # Très déterministe pour JSON consistant
+                    "top_p": 0.9,            # Limite aux réponses probables
+                    "num_predict": 200,      # Max ~200 tokens (notre JSON fait ~80-120)
+                    "repeat_penalty": 1.1,   # Évite keywords dupliqués
+                },
             )
 
             # Extraire la réponse
