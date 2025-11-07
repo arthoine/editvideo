@@ -101,9 +101,10 @@ class LLaVAAnalyzer:
                 "- Low time/health + success = +10 intensity\n"
                 "- Quiet moments = 0-40, Active fights = 40-80, Epic plays = 80-100\n\n"
 
-                "Respond in JSON:\n"
-                '{"action": true/false, "intensity": 0-100, "description": "what\'s happening", '
-                '"keywords": ["relevant", "keywords"]}'
+                "OUTPUT RULES:\n"
+                "Respond with ONLY valid JSON. No markdown, no text before/after.\n"
+                "Do NOT use ```json markers. Output must start with { and end with }\n"
+                '{"action": true, "intensity": 75, "description": "what is happening", "keywords": ["key", "words"]}'
             ),
             "extract_shooter": (
                 "You are analyzing an extraction shooter game (Tarkov, Hunt: Showdown, Arc Raiders). "
@@ -139,9 +140,13 @@ class LLaVAAnalyzer:
                 "- Moderate action (single AI fights) = 30-60\n"
                 "- High action (PvP, boss fights, extraction) = 60-100\n\n"
 
-                "Respond ONLY in JSON format:\n"
-                '{"action": true/false, "intensity": 0-100, "description": "detailed description of what is happening", '
-                '"keywords": ["specific", "relevant", "keywords"]}\n\n'
+                "RESPONSE FORMAT - CRITICAL:\n"
+                "Respond with ONLY valid JSON. No markdown, no explanation, no code blocks.\n"
+                "Do NOT use ```json or ``` markers.\n"
+                "Output MUST start with { and end with }\n\n"
+
+                "Required format:\n"
+                '{"action": true, "intensity": 85, "description": "detailed description", "keywords": ["keyword1", "keyword2"]}\n\n'
 
                 "Set action=true for intensity >= 50. Be precise with intensity scoring."
             ),
@@ -176,9 +181,10 @@ class LLaVAAnalyzer:
                 "- Kill count visible in HUD adds +10 per milestone (5, 10, 15 kills)\n"
                 "- Early game = 40-70, Mid game = 50-80, End game = 70-100\n\n"
 
-                "JSON format:\n"
-                '{"action": true/false, "intensity": 0-100, "description": "specific action", '
-                '"keywords": ["key", "words"]}'
+                "OUTPUT RULES:\n"
+                "Respond with ONLY valid JSON. No markdown, no explanation.\n"
+                "Do NOT use ```json markers. Start with { and end with }\n"
+                '{"action": true, "intensity": 85, "description": "specific action", "keywords": ["key", "words"]}'
             ),
         }
 
@@ -314,12 +320,36 @@ class LLaVAAnalyzer:
 
         # Essayer de parser comme JSON
         try:
-            # Extraire le JSON de la réponse (peut contenir du texte avant/après)
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
-            if json_match:
-                data = json.loads(json_match.group())
+            # Nettoyer la réponse des marqueurs markdown
+            cleaned = response.strip()
+
+            # Retirer les blocs de code markdown (```json ... ```)
+            cleaned = re.sub(r'^```(?:json)?\s*', '', cleaned)
+            cleaned = re.sub(r'\s*```$', '', cleaned)
+
+            # Retirer le texte avant le premier {
+            first_brace = cleaned.find('{')
+            if first_brace > 0:
+                cleaned = cleaned[first_brace:]
+
+            # Retirer le texte après le dernier }
+            last_brace = cleaned.rfind('}')
+            if last_brace >= 0:
+                cleaned = cleaned[:last_brace + 1]
+
+            # Corriger les doubles accolades {{ -> {
+            cleaned = cleaned.replace('{{', '{').replace('}}', '}')
+
+            # Tenter de parser le JSON nettoyé
+            if cleaned.startswith('{') and cleaned.endswith('}'):
+                data = json.loads(cleaned)
             else:
-                raise ValueError("Pas de JSON trouvé dans la réponse")
+                # Si pas de {} trouvés, chercher avec regex
+                json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response, re.DOTALL)
+                if json_match:
+                    data = json.loads(json_match.group())
+                else:
+                    raise ValueError("Pas de JSON valide trouvé")
 
             return LLaVAAnalysis(
                 timestamp=timestamp,
@@ -330,14 +360,15 @@ class LLaVAAnalyzer:
                 confidence=0.9,  # Assume haute confiance si JSON valide
             )
 
-        except (json.JSONDecodeError, ValueError):
+        except (json.JSONDecodeError, ValueError) as e:
             # Fallback : analyse textuelle
-            logger.debug(f"JSON invalide, analyse textuelle de: {response[:100]}")
+            logger.debug(f"JSON invalide (t={timestamp:.1f}s): {str(e)[:50]} | Réponse: {response[:150]}")
 
             # Détecter les mots-clés d'action
             action_keywords = [
                 'kill', 'death', 'headshot', 'ace', 'clutch', 'victory',
-                'elimination', 'frag', 'multikill', 'teamwipe', 'win'
+                'elimination', 'frag', 'multikill', 'teamwipe', 'win',
+                'extraction', 'boss', 'elite', 'firefight', 'combat'
             ]
 
             response_lower = response.lower()
