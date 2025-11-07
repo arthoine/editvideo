@@ -112,12 +112,29 @@ class LLaVAAnalyzer:
         try:
             # Vérifier la connexion
             response = ollama.list()
-            available_models = [model['name'] for model in response.get('models', [])]
+
+            # Support de différentes structures de réponse
+            if isinstance(response, dict):
+                models = response.get('models', [])
+            else:
+                models = response if isinstance(response, list) else []
+
+            # Extraire les noms de modèles de façon robuste
+            available_models = []
+            for model in models:
+                try:
+                    if isinstance(model, dict):
+                        model_name = model.get('name') or model.get('model') or str(model)
+                    else:
+                        model_name = str(model)
+                    available_models.append(model_name)
+                except:
+                    pass
 
             if self.model_name not in available_models:
                 logger.warning(
                     f"Modèle {self.model_name} non trouvé. "
-                    f"Disponibles: {', '.join(available_models)}"
+                    f"Disponibles: {', '.join(available_models) if available_models else 'aucun'}"
                 )
                 logger.info(f"Téléchargez avec: ollama pull {self.model_name}")
                 return False
@@ -392,16 +409,37 @@ def test_llava_connection():
         # Lister les modèles
         print("1. Vérification des modèles disponibles...")
         response = ollama.list()
-        models = response.get('models', [])
+
+        # Support de différentes structures de réponse
+        if isinstance(response, dict):
+            models = response.get('models', [])
+        else:
+            models = response if isinstance(response, list) else []
 
         print(f"   Modèles installés: {len(models)}")
+
+        # Afficher les modèles de façon robuste
+        llava_found = False
         for model in models:
-            print(f"   - {model['name']}")
+            try:
+                # Gérer différents formats de modèle
+                if isinstance(model, dict):
+                    model_name = model.get('name') or model.get('model') or str(model)
+                else:
+                    model_name = str(model)
+
+                print(f"   - {model_name}")
+
+                # Vérifier si c'est llava
+                if 'llava' in model_name.lower():
+                    llava_found = True
+                    llava_model_name = model_name
+            except Exception as e:
+                print(f"   - [erreur lecture modèle: {e}]")
 
         # Vérifier LLaVA
-        llava_models = [m for m in models if 'llava' in m['name'].lower()]
-        if llava_models:
-            print(f"\n✓ LLaVA détecté: {llava_models[0]['name']}")
+        if llava_found:
+            print(f"\n✓ LLaVA détecté: {llava_model_name}")
         else:
             print("\n✗ LLaVA non installé")
             print("   Installez avec: ollama pull llava:7b")
