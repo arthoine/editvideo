@@ -516,15 +516,32 @@ class VideoAnalyzer:
             segments: Liste des segments à exporter.
         """
         import json
+        import numpy as np
+
+        def convert_to_python_types(obj):
+            """Convertit les types numpy en types Python natifs pour JSON."""
+            if isinstance(obj, dict):
+                return {k: convert_to_python_types(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_to_python_types(item) for item in obj]
+            elif isinstance(obj, (np.integer, np.floating)):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            else:
+                return obj
 
         metadata = {
             "video_path": str(self.video_path),
-            "video_duration": self.duration,
+            "video_duration": float(self.duration),
             "total_segments": len(self.segments),
             "selected_segments": len(segments),
             "segments": [s.to_dict() for s in segments],
             "config": self.config,
         }
+
+        # Convertir tous les types numpy en types Python
+        metadata = convert_to_python_types(metadata)
 
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
