@@ -207,16 +207,26 @@ class VideoEditor:
 
             # Encodage
             if self.use_gpu and codec == "h264":
-                cmd.extend(["-c:v", "h264_nvenc", "-preset", preset])
+                # NVENC GPU : utiliser bitrate pour meilleure qualité
+                cmd.extend(["-c:v", "h264_nvenc"])
+                cmd.extend(["-preset", "p7"])  # p7 = qualité maximale NVENC
+                cmd.extend(["-tune", "hq"])    # High quality
+                cmd.extend(["-rc", "vbr"])     # Variable bitrate
+                cmd.extend(["-cq", "19"])      # Constant quality (meilleur que CRF sur NVENC)
+                cmd.extend(["-b:v", "0"])      # Pas de limite bitrate
+                cmd.extend(["-profile:v", "high"])
             elif codec == "h264":
-                cmd.extend(["-c:v", "libx264", "-preset", preset])
+                cmd.extend(["-c:v", "libx264", "-preset", preset, "-crf", str(crf)])
             elif codec == "h265":
                 if self.use_gpu:
-                    cmd.extend(["-c:v", "hevc_nvenc", "-preset", preset])
+                    cmd.extend(["-c:v", "hevc_nvenc"])
+                    cmd.extend(["-preset", "p7"])
+                    cmd.extend(["-tune", "hq"])
+                    cmd.extend(["-rc", "vbr"])
+                    cmd.extend(["-cq", "19"])
+                    cmd.extend(["-b:v", "0"])
                 else:
-                    cmd.extend(["-c:v", "libx265", "-preset", preset])
-
-            cmd.extend(["-crf", str(crf)])
+                    cmd.extend(["-c:v", "libx265", "-preset", preset, "-crf", str(crf)])
 
             # Audio
             cmd.extend(["-c:a", "aac", "-b:a", f"{audio_bitrate}k"])
