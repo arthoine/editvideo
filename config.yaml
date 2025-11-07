@@ -73,12 +73,14 @@ analysis:
   # Échantillonnage de frames pour l'analyse LLaVA
   # Analyser 1 frame toutes les N frames (60 = ~1 frame/seconde en 60fps)
   # Plus bas = plus précis mais plus lent (recommandé: 30-90)
-  llava_frame_sampling: 60
+  # OPTIMISÉ: 90 pour traitement 33% plus rapide
+  llava_frame_sampling: 90
 
   # Nombre maximum de frames à analyser (null = toutes)
   # Utile pour limiter le temps de traitement sur longues vidéos
   # Exemple: 200 frames = ~3-4 min d'analyse sur VOD de 4h
-  llava_max_frames: null
+  # OPTIMISÉ: 200 frames pour limiter le temps sur longues vidéos
+  llava_max_frames: 200
 
   # Seuil d'intensité LLaVA (0-100)
   # Seules les frames avec intensité >= ce seuil sont considérées comme highlights
@@ -308,3 +310,18 @@ presets:
       scene_threshold: 40.0
       min_segment_duration: 15
       max_segment_duration: 90
+
+  quick_fps:
+    # PRESET OPTIMISÉ: Traitement ultra-rapide pour FPS
+    # Utilise LLaVA:7b avec échantillonnage agressif
+    analysis:
+      audio_threshold: 0.60
+      scene_threshold: 20.0
+      min_segment_duration: 6
+      max_segment_duration: 25
+      llava_frame_sampling: 120  # Encore plus rapide
+      llava_max_frames: 150  # Limite stricte
+      llava_intensity_threshold: 55.0  # Plus permissif
+    editing:
+      encoding_preset: "fast"  # Encodage rapide
+      crf: 23  # Qualité légèrement réduite pour vitesse
