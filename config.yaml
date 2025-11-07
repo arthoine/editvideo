@@ -59,7 +59,7 @@ analysis:
   # Activer l'analyse LLaVA pour détection intelligente des moments clés
   # Nécessite : Ollama installé + modèle llava:7b téléchargé
   # Installation : pip install ollama && ollama pull llava:7b
-  use_llava: false
+  use_llava: true
 
   # Modèle LLaVA à utiliser (llava:7b, llava:13b, llava:34b)
   llava_model: "llava:7b"
@@ -144,7 +144,7 @@ performance:
   use_gpu: true
 
   # Forcer l'utilisation du GPU même si l'auto-détection échoue
-  force_gpu: false
+  force_gpu: true
 
   # Device GPU à utiliser (0 = premier GPU, 1 = second, etc.)
   gpu_device: 0
