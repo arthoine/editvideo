@@ -396,3 +396,28 @@ presets:
       llava_frame_sampling: 90
       llava_max_frames: 200
       llava_intensity_threshold: 35.0  # Très permissif pour debug
+
+  extended_fights:
+    # COMBATS COMPLETS: Pour Arc Raiders, Tarkov - séquences longues
+    # Capture les combats ENTIERS (2-3 min) avec setup et résultat
+    # Optimisé pour YouTube (narration complète)
+    analysis:
+      audio_threshold: 0.65  # Permissif pour capturer tout le combat
+      scene_threshold: 25.0
+      min_segment_duration: 15   # Minimum 15s pour avoir du contexte
+      max_segment_duration: 180  # Max 3 minutes (combats longs OK)
+      context_before: 8.0   # 8s avant = voir l'approche/setup
+      context_after: 8.0    # 8s après = voir résultat/loot/mort
+      overlap_prevention_margin: 3.0  # Plus de marge pour éviter jump cuts
+      audio_weight: 0.35
+      visual_weight: 0.25
+      llava_weight: 0.40
+      llava_prompt_type: "extract_shooter"
+      llava_frame_sampling: 90
+      llava_max_frames: 200
+      llava_intensity_threshold: 50.0  # Plus permissif = plus de moments capturés
+    editing:
+      transition_type: "fade"
+      transition_duration: 0.8  # Transition plus douce
+      encoding_preset: "medium"
+      crf: 20  # Qualité haute pour YouTube

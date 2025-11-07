@@ -90,7 +90,8 @@ from src.editor import VideoEditor, create_preview
         "extract_shooter",
         "quick_extract",
         "quick_fps",
-        "debug_permissive"
+        "debug_permissive",
+        "extended_fights"
     ]),
     default=None,
     help="Preset de configuration par type de jeu.",
