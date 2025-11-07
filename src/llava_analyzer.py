@@ -78,21 +78,72 @@ class LLaVAAnalyzer:
         # Prompts pré-définis pour l'analyse gaming
         self.gaming_prompts = {
             "fps": (
-                "Analyze this FPS gaming screenshot. Identify if there's an important moment like: "
-                "kills, headshots, multi-kills, clutch situations, aces, or intense action. "
-                "Rate the intensity from 0-100. Respond in JSON format: "
-                '{"action": true/false, "intensity": 0-100, "description": "brief description", '
-                '"keywords": ["keyword1", "keyword2"]}'
+                "Analyze this competitive FPS game screenshot (Valorant, CS:GO, COD, Apex).\n\n"
+
+                "KEY MOMENTS TO DETECT:\n"
+                "1. ACE (intensity: 95-100): Single player eliminating entire enemy team (5+ kills)\n"
+                "2. MULTI-KILLS (intensity: 85-95): Double kill, triple kill, quad kill notifications\n"
+                "3. CLUTCH (intensity: 80-95): 1v2 or higher situations, last player alive, round-winning plays\n"
+                "4. HEADSHOTS (intensity: 75-85): Headshot kills, headshot icons, precision eliminations\n"
+                "5. KILLS (intensity: 70-80): Standard eliminations, kill feed showing +1, enemy eliminated\n"
+                "6. INTENSE COMBAT (intensity: 60-75): Active gunfights, multiple enemies visible, explosions\n"
+                "7. ABILITIES (intensity: 50-70): Ultimate abilities used, special moves, grenades\n\n"
+
+                "VISUAL CUES:\n"
+                "- Kill feed: Shows recent eliminations, player names, weapon icons\n"
+                "- HUD: Health, ammo, ability cooldowns, score, round timer\n"
+                "- Notifications: '+100', 'ELIMINATED', 'HEADSHOT', 'DOUBLE KILL'\n"
+                "- Crosshair feedback: Hit markers, damage numbers, kill confirmations\n\n"
+
+                "SCORING:\n"
+                "- Multiple kills in view = higher score\n"
+                "- Clutch situations (1vX) = +15 intensity\n"
+                "- Low time/health + success = +10 intensity\n"
+                "- Quiet moments = 0-40, Active fights = 40-80, Epic plays = 80-100\n\n"
+
+                "Respond in JSON:\n"
+                '{"action": true/false, "intensity": 0-100, "description": "what\'s happening", '
+                '"keywords": ["relevant", "keywords"]}'
             ),
             "extract_shooter": (
-                "Analyze this extraction shooter game screenshot (Tarkov, Hunt: Showdown, Arc Raiders style). "
-                "Detect critical moments: kills, eliminations, successful extractions, rare loot, "
-                "intense firefights, survival situations, player deaths, close calls, tactical plays, "
-                "AI enemies (mechs/raiders), boss fights. "
-                "Rate intensity 0-100 (extraction=90, boss/elite=85, kill=80, firefight=75, loot=50). "
-                "JSON format: "
-                '{"action": true/false, "intensity": 0-100, "description": "brief", '
-                '"keywords": ["keyword1", "keyword2"]}'
+                "You are analyzing an extraction shooter game (Tarkov, Hunt: Showdown, Arc Raiders). "
+                "These are tactical PvPvE games where players loot, fight AI/players, and must extract to keep items.\n\n"
+
+                "CRITICAL MOMENTS TO DETECT:\n"
+                "1. EXTRACTION (intensity: 90-100): Player reaching extraction point, escape helicopter/vehicle visible, "
+                "extraction countdown, successful escape animation, 'extraction successful' message\n"
+                "2. BOSS/ELITE KILLS (intensity: 85-95): Defeating large AI bosses, mechs, elite enemies, "
+                "rare enemy death animations, boss health bar depleted\n"
+                "3. PVP KILLS (intensity: 80-90): Eliminating other players, kill notifications, kill feed showing player names, "
+                "multiple kills in quick succession, headshots, long-range sniper kills\n"
+                "4. INTENSE FIREFIGHTS (intensity: 75-85): Active combat with gunfire effects, muzzle flashes, "
+                "explosions, taking damage (red screen edges), low health warnings, healing under fire\n"
+                "5. CLOSE CALLS (intensity: 70-80): Near-death survival, very low health bar, reviving teammates, "
+                "narrow escape from danger, last-second extraction\n"
+                "6. TACTICAL PLAYS (intensity: 65-75): Flanking enemies, perfect positioning, clutch moments, "
+                "1vX situations, using environment strategically\n"
+                "7. RARE LOOT (intensity: 50-70): Legendary/epic items, rare weapon pickups, valuable loot containers, "
+                "full inventory of high-tier items, special item notifications\n"
+                "8. AI COMBAT (intensity: 45-65): Fighting regular AI enemies (raiders, mobs), clearing areas\n\n"
+
+                "VISUAL INDICATORS:\n"
+                "- HUD elements: health bars, ammo counter, kill feed, notifications\n"
+                "- Screen effects: damage vignettes, blood splatter, healing effects, death screens\n"
+                "- Player actions: looting animations, extraction timers, weapon firing\n"
+                "- Environmental: extraction zones, boss arenas, combat areas\n\n"
+
+                "SCORING GUIDELINES:\n"
+                "- Multiple simultaneous factors = higher score (e.g., low health + kill + extraction = 95)\n"
+                "- Context matters: killing while extracting is more intense than safe kills\n"
+                "- Quiet moments (looting, walking) = 0-30\n"
+                "- Moderate action (single AI fights) = 30-60\n"
+                "- High action (PvP, boss fights, extraction) = 60-100\n\n"
+
+                "Respond ONLY in JSON format:\n"
+                '{"action": true/false, "intensity": 0-100, "description": "detailed description of what is happening", '
+                '"keywords": ["specific", "relevant", "keywords"]}\n\n'
+
+                "Set action=true for intensity >= 50. Be precise with intensity scoring."
             ),
             "general": (
                 "Analyze this gaming screenshot. Is this an exciting or important moment? "
@@ -102,11 +153,32 @@ class LLaVAAnalyzer:
                 '"keywords": ["key", "words"]}'
             ),
             "battle_royale": (
-                "Analyze this battle royale screenshot. Detect: eliminations, squad wipes, "
-                "final circles, victories, high-kill games, or clutch moments. "
-                "Rate intensity 0-100. JSON format: "
-                '{"action": true/false, "intensity": 0-100, "description": "brief", '
-                '"keywords": ["tags"]}'
+                "Analyze this battle royale game screenshot (Apex, Warzone, Fortnite, PUBG).\n\n"
+
+                "CRITICAL MOMENTS:\n"
+                "1. VICTORY ROYALE (intensity: 100): Win screen, 'Champion', '#1', victory animation\n"
+                "2. FINAL CIRCLE (intensity: 85-95): Top 3-5 players, small circle, end-game situation\n"
+                "3. SQUAD WIPES (intensity: 80-90): Eliminating entire enemy squad, 'Squad eliminated'\n"
+                "4. HIGH-KILL STREAK (intensity: 75-85): Kill count 5+, rapid eliminations, kill leader\n"
+                "5. HOT DROP COMBAT (intensity: 70-80): Early game intense fights, multiple squads nearby\n"
+                "6. CLUTCH REVIVES (intensity: 65-75): Reviving teammates under fire, last player standing\n"
+                "7. ELIMINATIONS (intensity: 60-75): Knocking/eliminating enemies, kill notifications\n"
+                "8. SUPPLY DROPS (intensity: 50-65): Care packages, legendary loot, airdrops\n\n"
+
+                "VISUAL INDICATORS:\n"
+                "- Kill count displayed, players remaining counter\n"
+                "- Circle/zone visible on map, storm closing in\n"
+                "- Notifications: eliminations, damage dealt, revives\n"
+                "- Rarity indicators: legendary/epic items (gold, purple)\n\n"
+
+                "SCORING RULES:\n"
+                "- Final circle + combat = maximum intensity\n"
+                "- Kill count visible in HUD adds +10 per milestone (5, 10, 15 kills)\n"
+                "- Early game = 40-70, Mid game = 50-80, End game = 70-100\n\n"
+
+                "JSON format:\n"
+                '{"action": true/false, "intensity": 0-100, "description": "specific action", '
+                '"keywords": ["key", "words"]}'
             ),
         }
 
