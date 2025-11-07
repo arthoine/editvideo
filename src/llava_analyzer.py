@@ -282,12 +282,13 @@ class LLaVAAnalyzer:
             # Sélectionner le prompt
             prompt = self.gaming_prompts.get(prompt_type, self.gaming_prompts["general"])
 
-            # Appeler LLaVA via Ollama
+            # Appeler LLaVA via Ollama avec mode JSON forcé
             response = ollama.generate(
                 model=self.model_name,
                 prompt=prompt,
                 images=[image_b64],
                 stream=False,
+                format="json",  # Force la sortie en JSON valide
             )
 
             # Extraire la réponse
@@ -306,7 +307,7 @@ class LLaVAAnalyzer:
         self, response: str, timestamp: float
     ) -> LLaVAAnalysis:
         """
-        Parse la réponse de LLaVA et extrait les informations.
+        Parse la réponse de LLaVA avec parser ultra-robuste et validation.
 
         Args:
             response: Réponse texte de LLaVA.
@@ -318,74 +319,168 @@ class LLaVAAnalyzer:
         import json
         import re
 
-        # Essayer de parser comme JSON
-        try:
-            # Nettoyer la réponse des marqueurs markdown
-            cleaned = response.strip()
+        # Essayer de parser comme JSON avec multiples stratégies
+        for strategy_num, strategy in enumerate([
+            self._parse_strategy_1_clean,
+            self._parse_strategy_2_extract,
+            self._parse_strategy_3_repair,
+        ], 1):
+            try:
+                data = strategy(response)
 
-            # Retirer les blocs de code markdown (```json ... ```)
-            cleaned = re.sub(r'^```(?:json)?\s*', '', cleaned)
-            cleaned = re.sub(r'\s*```$', '', cleaned)
-
-            # Retirer le texte avant le premier {
-            first_brace = cleaned.find('{')
-            if first_brace > 0:
-                cleaned = cleaned[first_brace:]
-
-            # Retirer le texte après le dernier }
-            last_brace = cleaned.rfind('}')
-            if last_brace >= 0:
-                cleaned = cleaned[:last_brace + 1]
-
-            # Corriger les doubles accolades {{ -> {
-            cleaned = cleaned.replace('{{', '{').replace('}}', '}')
-
-            # Tenter de parser le JSON nettoyé
-            if cleaned.startswith('{') and cleaned.endswith('}'):
-                data = json.loads(cleaned)
-            else:
-                # Si pas de {} trouvés, chercher avec regex
-                json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response, re.DOTALL)
-                if json_match:
-                    data = json.loads(json_match.group())
+                # Validation du schéma
+                if self._validate_json_schema(data):
+                    return LLaVAAnalysis(
+                        timestamp=timestamp,
+                        description=data.get('description', '')[:500],  # Limit length
+                        action_detected=bool(data.get('action', False)),
+                        intensity_score=float(max(0, min(100, data.get('intensity', 0)))),  # Clamp 0-100
+                        keywords=data.get('keywords', [])[:10],  # Limit keywords
+                        confidence=0.95,  # Haute confiance avec validation
+                    )
                 else:
-                    raise ValueError("Pas de JSON valide trouvé")
+                    logger.debug(f"Strategy {strategy_num} returned invalid schema at t={timestamp:.1f}s")
 
-            return LLaVAAnalysis(
-                timestamp=timestamp,
-                description=data.get('description', response[:100]),
-                action_detected=data.get('action', False),
-                intensity_score=float(data.get('intensity', 0)),
-                keywords=data.get('keywords', []),
-                confidence=0.9,  # Assume haute confiance si JSON valide
-            )
+            except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
+                logger.debug(f"Strategy {strategy_num} failed at t={timestamp:.1f}s: {str(e)[:50]}")
+                continue
 
-        except (json.JSONDecodeError, ValueError) as e:
-            # Fallback : analyse textuelle
-            logger.debug(f"JSON invalide (t={timestamp:.1f}s): {str(e)[:50]} | Réponse: {response[:150]}")
+        # Fallback : analyse textuelle si toutes les stratégies échouent
+        logger.debug(f"All parsing strategies failed at t={timestamp:.1f}s, using keyword fallback")
+        return self._fallback_keyword_analysis(response, timestamp)
 
-            # Détecter les mots-clés d'action
-            action_keywords = [
-                'kill', 'death', 'headshot', 'ace', 'clutch', 'victory',
-                'elimination', 'frag', 'multikill', 'teamwipe', 'win',
-                'extraction', 'boss', 'elite', 'firefight', 'combat'
-            ]
+    def _parse_strategy_1_clean(self, response: str) -> dict:
+        """Stratégie 1: Nettoyage standard et parsing direct."""
+        import json
+        import re
 
-            response_lower = response.lower()
-            detected_keywords = [kw for kw in action_keywords if kw in response_lower]
-            action_detected = len(detected_keywords) > 0
+        cleaned = response.strip()
 
-            # Estimer l'intensité basée sur les mots-clés
-            intensity = min(100, len(detected_keywords) * 25) if action_detected else 20
+        # Retirer markdown
+        cleaned = re.sub(r'^```(?:json|JSON)?\s*', '', cleaned, flags=re.MULTILINE)
+        cleaned = re.sub(r'\s*```$', '', cleaned, flags=re.MULTILINE)
 
-            return LLaVAAnalysis(
-                timestamp=timestamp,
-                description=response[:200],
-                action_detected=action_detected,
-                intensity_score=float(intensity),
-                keywords=detected_keywords,
-                confidence=0.6,  # Confiance plus faible pour fallback
-            )
+        # Extraire JSON entre accolades
+        first_brace = cleaned.find('{')
+        last_brace = cleaned.rfind('}')
+
+        if first_brace >= 0 and last_brace > first_brace:
+            cleaned = cleaned[first_brace:last_brace + 1]
+
+        # Corrections courantes
+        cleaned = cleaned.replace('{{', '{').replace('}}', '}')
+        cleaned = cleaned.replace('\n', ' ')  # Single line
+
+        return json.loads(cleaned)
+
+    def _parse_strategy_2_extract(self, response: str) -> dict:
+        """Stratégie 2: Extraction regex aggressive."""
+        import json
+        import re
+
+        # Regex pour extraire un objet JSON complet
+        patterns = [
+            r'\{[^{}]*"action"[^{}]*"intensity"[^{}]*"description"[^{}]*"keywords"[^{}]*\}',
+            r'\{(?:[^{}]|\{[^{}]*\})*\}',  # Nested braces
+            r'\{.+?\}',  # Lazy match
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, response, re.DOTALL | re.IGNORECASE)
+            if match:
+                json_str = match.group(0)
+                # Clean up
+                json_str = json_str.replace('\n', ' ').replace('\r', '')
+                return json.loads(json_str)
+
+        raise ValueError("No JSON object found")
+
+    def _parse_strategy_3_repair(self, response: str) -> dict:
+        """Stratégie 3: Réparation JSON cassé."""
+        import json
+        import re
+
+        # Extraire le contenu entre {}
+        match = re.search(r'\{.*\}', response, re.DOTALL)
+        if not match:
+            raise ValueError("No braces found")
+
+        json_str = match.group(0)
+
+        # Réparations agressives
+        repairs = [
+            (r',\s*}', '}'),  # Trailing comma
+            (r',\s*]', ']'),  # Trailing comma in array
+            (r'}\s*{', '},{'),  # Missing comma between objects
+            (r'"\s*:\s*([^",\[\]{}]+)\s*,', r'": "\1",'),  # Unquoted values
+            (r'"\s*:\s*([^",\[\]{}]+)\s*}', r'": "\1"}'),  # Unquoted values at end
+            (r"'", '"'),  # Single to double quotes
+        ]
+
+        for pattern, replacement in repairs:
+            json_str = re.sub(pattern, replacement, json_str)
+
+        return json.loads(json_str)
+
+    def _validate_json_schema(self, data: dict) -> bool:
+        """Valide que le JSON contient les champs requis avec les bons types."""
+        try:
+            # Champs requis
+            if not isinstance(data, dict):
+                return False
+
+            # Vérifier action (bool)
+            if 'action' not in data or not isinstance(data['action'], bool):
+                return False
+
+            # Vérifier intensity (number)
+            if 'intensity' not in data:
+                return False
+            intensity = data['intensity']
+            if not isinstance(intensity, (int, float)) or intensity < 0 or intensity > 100:
+                return False
+
+            # Vérifier description (string)
+            if 'description' not in data or not isinstance(data['description'], str):
+                return False
+
+            # Vérifier keywords (array)
+            if 'keywords' not in data or not isinstance(data['keywords'], list):
+                return False
+
+            # Tous les keywords doivent être des strings
+            if not all(isinstance(kw, str) for kw in data['keywords']):
+                return False
+
+            return True
+
+        except Exception:
+            return False
+
+    def _fallback_keyword_analysis(self, response: str, timestamp: float) -> LLaVAAnalysis:
+        """Fallback : analyse par mots-clés si le JSON parsing échoue."""
+        action_keywords = [
+            'kill', 'death', 'headshot', 'ace', 'clutch', 'victory',
+            'elimination', 'frag', 'multikill', 'teamwipe', 'win',
+            'extraction', 'boss', 'elite', 'firefight', 'combat',
+            'mech', 'raid', 'loot', 'extract'
+        ]
+
+        response_lower = response.lower()
+        detected_keywords = [kw for kw in action_keywords if kw in response_lower]
+        action_detected = len(detected_keywords) > 0
+
+        # Estimer l'intensité
+        intensity = min(100, len(detected_keywords) * 20) if action_detected else 15
+
+        return LLaVAAnalysis(
+            timestamp=timestamp,
+            description=response[:300],
+            action_detected=action_detected,
+            intensity_score=float(intensity),
+            keywords=detected_keywords[:5],
+            confidence=0.5,  # Faible confiance pour fallback
+        )
 
     def analyze_video_segments(
         self,
