@@ -289,6 +289,8 @@ presets:
       scene_threshold: 25.0
       min_segment_duration: 8
       max_segment_duration: 30
+      context_before: 4.0  # Total: 8s >= min_duration
+      context_after: 4.0
 
   fps_tactique:
     # Pour jeux tactiques (Rainbow Six, PUBG)
@@ -297,6 +299,8 @@ presets:
       scene_threshold: 35.0
       min_segment_duration: 10
       max_segment_duration: 45
+      context_before: 5.0  # Total: 10s >= min_duration
+      context_after: 5.0
 
   battle_royale:
     # Pour BR (Apex, Warzone, Fortnite)
@@ -305,6 +309,8 @@ presets:
       scene_threshold: 30.0
       min_segment_duration: 12
       max_segment_duration: 60
+      context_before: 6.0  # Total: 12s >= min_duration
+      context_after: 6.0
 
   moba:
     # Pour MOBA (LoL, Dota 2)
@@ -313,6 +319,8 @@ presets:
       scene_threshold: 40.0
       min_segment_duration: 15
       max_segment_duration: 90
+      context_before: 7.5  # Total: 15s >= min_duration
+      context_after: 7.5
 
   extract_shooter:
     # OPTIMISÉ: Pour Extract Shooters (Tarkov, Hunt, Marauders)
@@ -341,8 +349,8 @@ presets:
       scene_threshold: 25.0
       min_segment_duration: 8
       max_segment_duration: 40
-      context_before: 2.5
-      context_after: 3.5
+      context_before: 4.0  # Total: 8s >= min_duration
+      context_after: 4.0
       audio_weight: 0.35
       visual_weight: 0.25
       llava_weight: 0.40
@@ -362,6 +370,8 @@ presets:
       scene_threshold: 20.0
       min_segment_duration: 6
       max_segment_duration: 25
+      context_before: 3.0  # Total: 6s >= min_duration
+      context_after: 3.0
       llava_frame_sampling: 120  # Encore plus rapide
       llava_max_frames: 150  # Limite stricte
       llava_intensity_threshold: 55.0  # Plus permissif
