@@ -85,10 +85,11 @@ class LLaVAAnalyzer:
                 '"keywords": ["keyword1", "keyword2"]}'
             ),
             "extract_shooter": (
-                "Analyze this extraction shooter game screenshot (Tarkov, Hunt: Showdown style). "
+                "Analyze this extraction shooter game screenshot (Tarkov, Hunt: Showdown, Arc Raiders style). "
                 "Detect critical moments: kills, eliminations, successful extractions, rare loot, "
-                "intense firefights, survival situations, player deaths, close calls, tactical plays. "
-                "Rate intensity 0-100 (extraction=90, kill=80, firefight=75, loot=50). "
+                "intense firefights, survival situations, player deaths, close calls, tactical plays, "
+                "AI enemies (mechs/raiders), boss fights. "
+                "Rate intensity 0-100 (extraction=90, boss/elite=85, kill=80, firefight=75, loot=50). "
                 "JSON format: "
                 '{"action": true/false, "intensity": 0-100, "description": "brief", '
                 '"keywords": ["keyword1", "keyword2"]}'
