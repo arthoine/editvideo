@@ -42,10 +42,47 @@ analysis:
 
   # Scoring
   # Poids du score audio dans le calcul final (0.0 - 1.0)
+  # Sans LLaVA : audio=0.6, visuel=0.4
+  # Avec LLaVA : audio=0.3, visuel=0.2, llava=0.5
   audio_weight: 0.6
 
   # Poids du score visuel dans le calcul final (0.0 - 1.0)
   visual_weight: 0.4
+
+  # Poids du score LLaVA (IA multimodale) dans le calcul final (0.0 - 1.0)
+  # Utilisé uniquement si use_llava est activé
+  llava_weight: 0.5
+
+  # ============================================
+  # ANALYSE LLAVA (IA MULTIMODALE)
+  # ============================================
+  # Activer l'analyse LLaVA pour détection intelligente des moments clés
+  # Nécessite : Ollama installé + modèle llava:7b téléchargé
+  # Installation : pip install ollama && ollama pull llava:7b
+  use_llava: false
+
+  # Modèle LLaVA à utiliser (llava:7b, llava:13b, llava:34b)
+  llava_model: "llava:7b"
+
+  # Type de prompt pour l'analyse
+  # "fps" : Jeux FPS (Valorant, CS:GO, COD)
+  # "battle_royale" : Battle Royale (Apex, Warzone, Fortnite)
+  # "general" : Jeux variés
+  llava_prompt_type: "fps"
+
+  # Échantillonnage de frames pour l'analyse LLaVA
+  # Analyser 1 frame toutes les N frames (60 = ~1 frame/seconde en 60fps)
+  # Plus bas = plus précis mais plus lent (recommandé: 30-90)
+  llava_frame_sampling: 60
+
+  # Nombre maximum de frames à analyser (null = toutes)
+  # Utile pour limiter le temps de traitement sur longues vidéos
+  # Exemple: 200 frames = ~3-4 min d'analyse sur VOD de 4h
+  llava_max_frames: null
+
+  # Seuil d'intensité LLaVA (0-100)
+  # Seules les frames avec intensité >= ce seuil sont considérées comme highlights
+  llava_intensity_threshold: 60.0
 
 # ============================================
 # PARAMÈTRES DE MONTAGE

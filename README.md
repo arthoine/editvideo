@@ -11,10 +11,11 @@ Analyser automatiquement un VOD de stream de jeu FPS et extraire les meilleurs m
 
 ## ✨ Fonctionnalités
 
-### 🔍 Analyse Vidéo Locale
+### 🔍 Analyse Vidéo Locale avec IA
 - **Détection audio intelligente** : Identifie les pics sonores (cris, réactions) correspondant aux moments d'action
 - **Analyse de scènes** : Détecte les changements rapides de scène indiquant une action intense
-- **Score de pertinence** : Attribue un score à chaque segment pour sélectionner les meilleurs moments
+- **🤖 Analyse LLaVA (IA Multimodale)** : Utilise le modèle LLaVA:7b pour comprendre visuellement les moments clés (kills, clutches, aces)
+- **Score de pertinence** : Combine audio + visuel + IA pour sélectionner les meilleurs moments
 
 ### 🎬 Extraction Intelligente
 - Sélection automatique des N meilleurs segments selon leur score
@@ -76,6 +77,41 @@ ffmpeg -version
 Si vous avez une carte NVIDIA, installez CUDA Toolkit :
 - [Télécharger CUDA Toolkit](https://developer.nvidia.com/cuda-downloads)
 - Le script détectera automatiquement le GPU
+
+### 6. Installation LLaVA (IA Multimodale - Recommandé)
+
+Pour activer l'analyse intelligente avec IA, installez Ollama et le modèle LLaVA:7b :
+
+#### a) Installer Ollama (Windows)
+```bash
+# Télécharger Ollama depuis : https://ollama.com/download
+# Ou via winget :
+winget install Ollama.Ollama
+```
+
+#### b) Télécharger le modèle LLaVA
+```bash
+# Démarrer Ollama (une seule fois)
+ollama serve
+
+# Dans un autre terminal, télécharger LLaVA:7b (~4.7 GB)
+ollama pull llava:7b
+```
+
+#### c) Tester LLaVA
+```bash
+# Vérifier que LLaVA est bien installé
+python -c "from src.llava_analyzer import test_llava_connection; test_llava_connection()"
+```
+
+#### d) Activer dans la configuration
+Éditez `config.yaml` et changez :
+```yaml
+analysis:
+  use_llava: true  # false -> true
+```
+
+**Note** : LLaVA est optionnel. Sans LLaVA, l'outil utilise l'analyse audio/vidéo classique (toujours très efficace !).
 
 ## 📖 Utilisation
 
@@ -156,13 +192,17 @@ Voir `examples/config.yaml` pour plus d'exemples.
 ```
 VOD (4h) → Analyse Audio → Pics Sonores
          → Analyse Vidéo → Changements de Scène
+         → Analyse LLaVA → Détection IA (moments clés)
 ```
 
 ### 2. Scoring des Segments
 Chaque segment reçoit un score basé sur :
 - **Score audio** (0-100) : Intensité des pics sonores
 - **Score visuel** (0-100) : Fréquence des changements de scène
-- **Score combiné** : `(audio * 0.6) + (visuel * 0.4)`
+- **Score LLaVA** (0-100) : Détection IA de kills, clutches, aces (optionnel)
+
+**Sans LLaVA** : `score = (audio * 0.6) + (visuel * 0.4)`
+**Avec LLaVA** : `score = (audio * 0.3) + (visuel * 0.2) + (llava * 0.5)`
 
 ### 3. Sélection Intelligente
 ```python
@@ -192,17 +232,18 @@ for segment in segments:
 ```
 editvideo/
 ├── src/
-│   ├── analyzer.py      # Analyse vidéo et détection de moments clés
-│   ├── editor.py        # Montage et assemblage vidéo
-│   └── utils.py         # Fonctions utilitaires (cache, GPU, logs)
+│   ├── analyzer.py         # Analyse vidéo et détection de moments clés
+│   ├── llava_analyzer.py   # Analyse IA avec LLaVA (multimodal)
+│   ├── editor.py           # Montage et assemblage vidéo
+│   └── utils.py            # Fonctions utilitaires (cache, GPU, logs)
 ├── examples/
-│   └── config.yaml      # Exemples de configuration
-├── main.py              # Point d'entrée CLI
-├── config.yaml          # Configuration par défaut
-├── requirements.txt     # Dépendances Python
-├── README.md            # Documentation (ce fichier)
-├── LICENSE              # Licence MIT
-└── .gitignore           # Fichiers à ignorer par Git
+│   └── config.yaml         # Exemples de configuration
+├── main.py                 # Point d'entrée CLI
+├── config.yaml             # Configuration par défaut
+├── requirements.txt        # Dépendances Python
+├── README.md               # Documentation (ce fichier)
+├── LICENSE                 # Licence MIT
+└── .gitignore              # Fichiers à ignorer par Git
 ```
 
 ## 🔧 Développement

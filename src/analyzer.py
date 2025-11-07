@@ -4,6 +4,7 @@ Module d'analyse vidéo pour la détection de moments clés.
 Ce module implémente :
 - Analyse audio (détection de pics sonores)
 - Détection de changements de scène
+- Analyse LLaVA (IA multimodale pour détection intelligente)
 - Scoring des segments
 - Sélection intelligente des meilleurs moments
 """
@@ -21,6 +22,14 @@ from loguru import logger
 
 from src.utils import CacheManager, SystemUtils
 
+# Import conditionnel de LLaVA
+try:
+    from src.llava_analyzer import LLaVAAnalyzer, LLaVAAnalysis
+    LLAVA_AVAILABLE = True
+except ImportError:
+    LLAVA_AVAILABLE = False
+    logger.warning("LLaVA non disponible (installer ollama)")
+
 
 @dataclass
 class Segment:
@@ -31,13 +40,15 @@ class Segment:
     duration: float  # Durée en secondes
     audio_score: float  # Score audio (0-100)
     visual_score: float  # Score visuel (0-100)
+    llava_score: float  # Score LLaVA IA (0-100)
     combined_score: float  # Score combiné (0-100)
     peak_timestamp: float  # Timestamp du pic d'intensité
+    llava_description: str = ""  # Description LLaVA (optionnel)
 
     def __repr__(self):
         return (
             f"Segment({self.start_time:.1f}s-{self.end_time:.1f}s, "
-            f"score={self.combined_score:.1f})"
+            f"score={self.combined_score:.1f}, llava={self.llava_score:.1f})"
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -74,6 +85,22 @@ class VideoAnalyzer:
         self.sample_rate: Optional[int] = None
         self.segments: List[Segment] = []
 
+        # Initialiser LLaVA si activé et disponible
+        self.llava_analyzer: Optional[LLaVAAnalyzer] = None
+        self.use_llava = self.config.get("analysis", {}).get("use_llava", False)
+
+        if self.use_llava and LLAVA_AVAILABLE:
+            try:
+                model_name = self.config.get("analysis", {}).get("llava_model", "llava:7b")
+                self.llava_analyzer = LLaVAAnalyzer(model_name=model_name, config=config)
+                logger.info("✓ Analyseur LLaVA activé")
+            except Exception as e:
+                logger.warning(f"Impossible d'initialiser LLaVA : {e}")
+                self.use_llava = False
+        elif self.use_llava and not LLAVA_AVAILABLE:
+            logger.warning("LLaVA activé dans config mais non disponible")
+            self.use_llava = False
+
         logger.info(f"Analyseur initialisé pour : {self.video_path.name}")
         logger.info(f"Durée vidéo : {SystemUtils.format_duration(self.duration)}")
 
@@ -102,16 +129,48 @@ class VideoAnalyzer:
         logger.info("Début de l'analyse vidéo...")
 
         # Étape 1 : Extraction et analyse audio
-        logger.info("[1/3] Analyse audio...")
+        num_steps = 4 if self.use_llava else 3
+        logger.info(f"[1/{num_steps}] Analyse audio...")
         audio_peaks = self._analyze_audio()
 
         # Étape 2 : Détection de scènes
-        logger.info("[2/3] Détection de scènes...")
+        logger.info(f"[2/{num_steps}] Détection de scènes...")
         scene_changes = self._detect_scenes()
 
-        # Étape 3 : Création et scoring des segments
-        logger.info("[3/3] Création des segments...")
-        self.segments = self._create_segments(audio_peaks, scene_changes)
+        # Étape 3 : Analyse LLaVA (si activée)
+        llava_highlights = []
+        if self.use_llava and self.llava_analyzer:
+            logger.info(f"[3/{num_steps}] Analyse LLaVA (IA multimodale)...")
+            try:
+                sample_rate = self.config.get("analysis", {}).get("llava_frame_sampling", 60)
+                prompt_type = self.config.get("analysis", {}).get("llava_prompt_type", "fps")
+                max_frames = self.config.get("analysis", {}).get("llava_max_frames", None)
+
+                llava_analyses = self.llava_analyzer.analyze_video_segments(
+                    video_path=str(self.video_path),
+                    sample_rate=sample_rate,
+                    prompt_type=prompt_type,
+                    max_frames=max_frames,
+                    show_progress=True,
+                )
+
+                # Extraire les timestamps importants
+                intensity_threshold = self.config.get("analysis", {}).get("llava_intensity_threshold", 60.0)
+                llava_highlights = self.llava_analyzer.get_highlight_timestamps(
+                    llava_analyses, intensity_threshold=intensity_threshold
+                )
+
+                # Stocker les analyses pour usage ultérieur
+                self.llava_analyses = llava_analyses
+
+            except Exception as e:
+                logger.error(f"Erreur lors de l'analyse LLaVA : {e}")
+                logger.warning("Poursuite sans analyse LLaVA")
+
+        # Étape 4 : Création et scoring des segments
+        step_num = 4 if self.use_llava else 3
+        logger.info(f"[{step_num}/{num_steps}] Création des segments...")
+        self.segments = self._create_segments(audio_peaks, scene_changes, llava_highlights)
 
         # Sauvegarder dans le cache
         if cache_key and self.cache_manager:
@@ -269,24 +328,39 @@ class VideoAnalyzer:
         return merged_changes
 
     def _create_segments(
-        self, audio_peaks: List[Dict[str, float]], scene_changes: List[float]
+        self,
+        audio_peaks: List[Dict[str, float]],
+        scene_changes: List[float],
+        llava_highlights: List[float] = None,
     ) -> List[Segment]:
         """
-        Crée des segments basés sur les pics audio et changements de scène.
+        Crée des segments basés sur les pics audio, changements de scène et analyse LLaVA.
 
         Args:
             audio_peaks: Liste des pics audio détectés.
             scene_changes: Liste des changements de scène.
+            llava_highlights: Liste des timestamps détectés par LLaVA (optionnel).
 
         Returns:
             Liste de segments scorés.
         """
+        if llava_highlights is None:
+            llava_highlights = []
+
         min_duration = self.config.get("analysis", {}).get("min_segment_duration", 5)
         max_duration = self.config.get("analysis", {}).get("max_segment_duration", 45)
         context_before = self.config.get("analysis", {}).get("context_before", 2.5)
         context_after = self.config.get("analysis", {}).get("context_after", 3.0)
-        audio_weight = self.config.get("analysis", {}).get("audio_weight", 0.6)
-        visual_weight = self.config.get("analysis", {}).get("visual_weight", 0.4)
+
+        # Poids des scores (ajustés si LLaVA est activé)
+        if self.use_llava and llava_highlights:
+            audio_weight = self.config.get("analysis", {}).get("audio_weight", 0.3)
+            visual_weight = self.config.get("analysis", {}).get("visual_weight", 0.2)
+            llava_weight = self.config.get("analysis", {}).get("llava_weight", 0.5)
+        else:
+            audio_weight = self.config.get("analysis", {}).get("audio_weight", 0.6)
+            visual_weight = self.config.get("analysis", {}).get("visual_weight", 0.4)
+            llava_weight = 0.0
 
         segments = []
 
@@ -311,9 +385,37 @@ class VideoAnalyzer:
             # Normaliser (plus de changements = plus d'action)
             visual_score = min(100, scene_count * 20)
 
-            # Score combiné
-            combined_score = (audio_intensity * audio_weight) + (
-                visual_score * visual_weight
+            # Calculer le score LLaVA (si disponible)
+            llava_score = 0.0
+            llava_description = ""
+
+            if self.use_llava and hasattr(self, 'llava_analyses'):
+                # Trouver les analyses LLaVA dans ce segment
+                segment_llava = [
+                    a for a in self.llava_analyses
+                    if start_time <= a.timestamp <= end_time
+                ]
+
+                if segment_llava:
+                    # Utiliser le score max d'intensité dans le segment
+                    llava_score = max(a.intensity_score for a in segment_llava)
+
+                    # Récupérer la description la plus pertinente
+                    best_analysis = max(segment_llava, key=lambda a: a.intensity_score)
+                    llava_description = best_analysis.description
+
+            # Calculer si LLaVA a détecté ce segment
+            llava_detected = any(
+                abs(hl - peak_time) < 2.0 for hl in llava_highlights
+            )
+            if llava_detected and llava_score == 0.0:
+                llava_score = 70.0  # Score par défaut si détecté mais pas analysé
+
+            # Score combiné (avec ou sans LLaVA)
+            combined_score = (
+                (audio_intensity * audio_weight) +
+                (visual_score * visual_weight) +
+                (llava_score * llava_weight)
             )
 
             segment = Segment(
@@ -322,14 +424,22 @@ class VideoAnalyzer:
                 duration=duration,
                 audio_score=audio_intensity,
                 visual_score=visual_score,
+                llava_score=llava_score,
                 combined_score=combined_score,
                 peak_timestamp=peak_time,
+                llava_description=llava_description,
             )
 
             segments.append(segment)
 
         # Trier par score décroissant
         segments.sort(key=lambda s: s.combined_score, reverse=True)
+
+        logger.debug(
+            f"Segments créés avec scoring : "
+            f"audio={audio_weight:.1%}, visual={visual_weight:.1%}, "
+            f"llava={llava_weight:.1%}"
+        )
 
         return segments
 

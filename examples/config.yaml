@@ -275,6 +275,121 @@ multi_jeux:
     include_timestamp: true
 
 # ==========================================
+# EXEMPLE 16 : Analyse LLaVA Activée (IA Multimodale)
+# ==========================================
+# Active l'analyse avec le modèle LLaVA pour détection intelligente
+# Nécessite : Ollama + llava:7b installés
+llava_enabled:
+  analysis:
+    # Activer LLaVA
+    use_llava: true
+    llava_model: "llava:7b"
+    llava_prompt_type: "fps"
+    llava_frame_sampling: 60  # 1 frame/seconde
+    llava_max_frames: null  # Analyser toute la vidéo
+    llava_intensity_threshold: 60.0
+
+    # Poids ajustés avec LLaVA
+    audio_weight: 0.3
+    visual_weight: 0.2
+    llava_weight: 0.5
+
+  output:
+    default_duration: 15
+
+# ==========================================
+# EXEMPLE 17 : LLaVA Analyse Rapide (Frames Limitées)
+# ==========================================
+# Version rapide avec limite de frames pour test
+llava_rapide:
+  analysis:
+    use_llava: true
+    llava_model: "llava:7b"
+    llava_prompt_type: "fps"
+    llava_frame_sampling: 90  # 1 frame toutes les 1.5 secondes
+    llava_max_frames: 100  # Limite à 100 frames (~3-4 min d'analyse)
+    llava_intensity_threshold: 70.0  # Plus sélectif
+
+    audio_weight: 0.3
+    visual_weight: 0.2
+    llava_weight: 0.5
+
+  performance:
+    cache_enabled: true  # Cache important pour LLaVA
+
+# ==========================================
+# EXEMPLE 18 : LLaVA Battle Royale
+# ==========================================
+# Optimisé pour Apex, Warzone, Fortnite avec LLaVA
+llava_battle_royale:
+  analysis:
+    use_llava: true
+    llava_model: "llava:7b"
+    llava_prompt_type: "battle_royale"  # Prompt spécialisé BR
+    llava_frame_sampling: 60
+    llava_max_frames: null
+    llava_intensity_threshold: 65.0
+
+    audio_threshold: 0.70
+    scene_threshold: 30.0
+    min_segment_duration: 12
+    max_segment_duration: 60
+
+    audio_weight: 0.25
+    visual_weight: 0.25
+    llava_weight: 0.50
+
+  output:
+    default_duration: 18
+
+# ==========================================
+# EXEMPLE 19 : LLaVA + GPU Ultra Performance
+# ==========================================
+# Configuration maximale : LLaVA + GPU + Cache
+llava_ultra:
+  analysis:
+    use_llava: true
+    llava_model: "llava:7b"
+    llava_prompt_type: "fps"
+    llava_frame_sampling: 45  # Plus précis
+    llava_intensity_threshold: 60.0
+
+    audio_weight: 0.3
+    visual_weight: 0.2
+    llava_weight: 0.5
+
+  performance:
+    use_gpu: true
+    force_gpu: true
+    cache_enabled: true
+    num_threads: -1
+
+  editing:
+    video_codec: "h264"
+    encoding_preset: "fast"
+    output_fps: 60
+
+# ==========================================
+# EXEMPLE 20 : Mode Hybride (Audio/Visuel prioritaire)
+# ==========================================
+# LLaVA activé mais avec moins de poids
+llava_hybride:
+  analysis:
+    use_llava: true
+    llava_model: "llava:7b"
+    llava_prompt_type: "general"
+    llava_frame_sampling: 90
+    llava_max_frames: 150
+
+    # LLaVA utilisé seulement comme validation
+    audio_weight: 0.45
+    visual_weight: 0.35
+    llava_weight: 0.20  # Poids plus faible
+
+  output:
+    default_duration: 15
+
+# ==========================================
 # COMMENT UTILISER CES EXEMPLES
 # ==========================================
 # Méthode 1 : Copier dans config.yaml
