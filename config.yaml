@@ -1,0 +1,273 @@
+# EditVideo - Configuration par Défaut
+# Documentation complète : https://github.com/votre-username/editvideo
+
+# ============================================
+# PARAMÈTRES D'ANALYSE VIDÉO
+# ============================================
+analysis:
+  # Détection Audio
+  # Seuil de détection des pics sonores (0.0 - 1.0)
+  # Valeur basse = plus sensible, détecte plus de moments
+  # Valeur haute = moins sensible, détecte uniquement les moments très intenses
+  audio_threshold: 0.7
+
+  # Taille de la fenêtre d'analyse audio (en secondes)
+  audio_window_size: 0.5
+
+  # Détection de Scènes
+  # Seuil de changement de scène (0-100)
+  # Plus la valeur est basse, plus les changements subtils sont détectés
+  scene_threshold: 30.0
+
+  # Méthode de détection de scènes : "content" ou "threshold"
+  scene_detection_method: "content"
+
+  # Segments
+  # Durée minimale d'un segment (en secondes)
+  min_segment_duration: 5
+
+  # Durée maximale d'un segment (en secondes)
+  max_segment_duration: 45
+
+  # Contexte avant le moment clé (en secondes)
+  # Ajoute du contenu avant le moment fort pour le contexte
+  context_before: 2.5
+
+  # Contexte après le moment clé (en secondes)
+  # Ajoute du contenu après le moment fort pour voir le résultat
+  context_after: 3.0
+
+  # Marge pour éviter les doublons entre clips adjacents (en secondes)
+  overlap_prevention_margin: 1.0
+
+  # Scoring
+  # Poids du score audio dans le calcul final (0.0 - 1.0)
+  audio_weight: 0.6
+
+  # Poids du score visuel dans le calcul final (0.0 - 1.0)
+  visual_weight: 0.4
+
+# ============================================
+# PARAMÈTRES DE MONTAGE
+# ============================================
+editing:
+  # Résolution de sortie (format: "WIDTHxHEIGHT")
+  # Options courantes: "1920x1080", "2560x1440", "3840x2160"
+  output_resolution: "1920x1080"
+
+  # FPS de sortie
+  # 60fps recommandé pour les jeux, 30fps pour réduire la taille
+  output_fps: 60
+
+  # Ratio d'aspect : "16:9" (YouTube), "9:16" (TikTok/Shorts), "1:1" (Instagram)
+  aspect_ratio: "16:9"
+
+  # Transitions
+  # Type de transition entre clips: "fade", "cut", "dissolve", "wipe"
+  transition_type: "fade"
+
+  # Durée de la transition (en secondes)
+  transition_duration: 0.5
+
+  # Encodage Vidéo
+  # Codec vidéo : "h264" (compatible), "h265" (meilleure compression), "vp9" (open-source)
+  video_codec: "h264"
+
+  # Preset d'encodage : "ultrafast", "fast", "medium", "slow", "veryslow"
+  # Plus lent = meilleure qualité/compression, plus rapide = fichier plus gros
+  encoding_preset: "medium"
+
+  # CRF (Constant Rate Factor) : 0-51 (0=lossless, 23=défaut, 51=pire qualité)
+  # Valeurs recommandées : 18-23 pour haute qualité, 23-28 pour équilibre
+  crf: 20
+
+  # Encodage Audio
+  # Codec audio : "aac" (recommandé), "mp3", "opus"
+  audio_codec: "aac"
+
+  # Bitrate audio en kbps
+  audio_bitrate: 192
+
+  # Intro/Outro
+  # Si True, cherche automatiquement intro.mp4 et outro.mp4 dans le dossier courant
+  auto_detect_intro_outro: false
+
+  # Chemin par défaut pour l'intro (optionnel)
+  default_intro_path: null
+
+  # Chemin par défaut pour l'outro (optionnel)
+  default_outro_path: null
+
+# ============================================
+# PARAMÈTRES DE PERFORMANCE
+# ============================================
+performance:
+  # GPU
+  # Utiliser le GPU NVIDIA si disponible (CUDA)
+  use_gpu: true
+
+  # Forcer l'utilisation du GPU même si l'auto-détection échoue
+  force_gpu: false
+
+  # Device GPU à utiliser (0 = premier GPU, 1 = second, etc.)
+  gpu_device: 0
+
+  # Cache
+  # Activer le système de cache pour les analyses
+  cache_enabled: true
+
+  # Durée de validité du cache (en heures)
+  # Le cache sera invalidé après ce délai
+  cache_ttl: 168  # 7 jours
+
+  # Dossier de cache (relatif au projet ou absolu)
+  cache_dir: ".cache"
+
+  # Multithreading
+  # Nombre de threads pour le traitement parallèle
+  # -1 = utiliser tous les cœurs disponibles
+  # 0 = auto-détection (70% des cœurs)
+  # >0 = nombre spécifique de threads
+  num_threads: 0
+
+  # Taille du buffer pour la lecture vidéo (en MB)
+  video_buffer_size: 512
+
+  # Mémoire maximale utilisable (en GB)
+  # -1 = pas de limite, sinon spécifier une limite
+  max_memory_gb: -1
+
+# ============================================
+# PARAMÈTRES DE SORTIE
+# ============================================
+output:
+  # Durée cible par défaut (en minutes)
+  default_duration: 15
+
+  # Permettre de dépasser légèrement la durée cible (en pourcentage)
+  # Ex: 10 = permet jusqu'à 10% de dépassement
+  duration_tolerance: 5
+
+  # Nom de fichier par défaut si non spécifié
+  default_filename: "highlights.mp4"
+
+  # Inclure un timestamp dans le nom de fichier
+  include_timestamp: false
+
+  # Format du timestamp : "YYYYMMDD_HHMMSS"
+  timestamp_format: "%Y%m%d_%H%M%S"
+
+  # Créer un dossier de sortie si inexistant
+  create_output_dir: true
+
+  # Conserver les fichiers temporaires après le traitement
+  keep_temp_files: false
+
+  # Dossier des fichiers temporaires
+  temp_dir: "temp"
+
+# ============================================
+# PARAMÈTRES DE LOGGING
+# ============================================
+logging:
+  # Niveau de log : "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+  level: "INFO"
+
+  # Activer les logs dans un fichier
+  log_to_file: true
+
+  # Chemin du fichier de log
+  log_file: "editvideo.log"
+
+  # Rotation des logs (taille maximale en MB avant rotation)
+  log_max_size_mb: 10
+
+  # Nombre de fichiers de log à conserver
+  log_backup_count: 3
+
+  # Afficher la barre de progression
+  show_progress_bar: true
+
+  # Afficher les statistiques détaillées à la fin
+  show_stats: true
+
+  # Couleurs dans la console (désactiver si problèmes d'affichage)
+  colored_output: true
+
+# ============================================
+# PARAMÈTRES AVANCÉS
+# ============================================
+advanced:
+  # Prévisualisation
+  # Générer une prévisualisation vidéo basse résolution pour validation
+  generate_preview: false
+
+  # Résolution de la prévisualisation
+  preview_resolution: "854x480"
+
+  # FPS de la prévisualisation
+  preview_fps: 30
+
+  # Export JSON
+  # Exporter les métadonnées d'analyse en JSON
+  export_metadata: false
+
+  # Chemin du fichier de métadonnées
+  metadata_file: "analysis_metadata.json"
+
+  # Sauvegarder la timeline EDL (Edit Decision List)
+  # Utile pour import dans des logiciels de montage professionnels
+  export_edl: false
+
+  # Format EDL : "cmx3600", "fcpxml"
+  edl_format: "cmx3600"
+
+  # Détection Avancée
+  # Activer la détection de visages (expérimental, nécessite plus de ressources)
+  face_detection: false
+
+  # Activer la détection d'objets (expérimental, nécessite ML)
+  object_detection: false
+
+  # Modèle de détection : "yolo", "ssd", "rcnn"
+  detection_model: "yolo"
+
+  # Seuil de confiance pour la détection (0.0 - 1.0)
+  detection_confidence: 0.5
+
+# ============================================
+# PRESETS PAR TYPE DE JEU
+# ============================================
+# Ces presets peuvent être activés avec --preset [nom]
+presets:
+  fps_intense:
+    # Pour jeux FPS rapides (Valorant, CS:GO, COD)
+    analysis:
+      audio_threshold: 0.65
+      scene_threshold: 25.0
+      min_segment_duration: 8
+      max_segment_duration: 30
+
+  fps_tactique:
+    # Pour jeux tactiques (Rainbow Six, PUBG)
+    analysis:
+      audio_threshold: 0.75
+      scene_threshold: 35.0
+      min_segment_duration: 10
+      max_segment_duration: 45
+
+  battle_royale:
+    # Pour BR (Apex, Warzone, Fortnite)
+    analysis:
+      audio_threshold: 0.70
+      scene_threshold: 30.0
+      min_segment_duration: 12
+      max_segment_duration: 60
+
+  moba:
+    # Pour MOBA (LoL, Dota 2)
+    analysis:
+      audio_threshold: 0.80
+      scene_threshold: 40.0
+      min_segment_duration: 15
+      max_segment_duration: 90

@@ -1,0 +1,204 @@
+# EditVideo - .gitignore
+
+# ============================================
+# Python
+# ============================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyCharm
+.idea/
+
+# ============================================
+# Fichiers Vidéo (ne pas versionner)
+# ============================================
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.flv
+*.wmv
+*.webm
+*.m4v
+*.mpg
+*.mpeg
+
+# ============================================
+# Fichiers Audio
+# ============================================
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.m4a
+
+# ============================================
+# Fichiers Temporaires et Cache
+# ============================================
+temp/
+.cache/
+*.tmp
+*.temp
+*.log
+*.bak
+
+# Cache d'analyse EditVideo
+.cache/
+cache/
+
+# Logs
+*.log
+editvideo.log*
+
+# ============================================
+# Fichiers de Métadonnées
+# ============================================
+analysis_metadata.json
+*.edl
+*.xml
+
+# ============================================
+# Fichiers de Configuration Personnels
+# ============================================
+# Ne pas ignorer config.yaml par défaut, mais les configs personnalisées
+config.local.yaml
+config.*.yaml
+!config.yaml
+!examples/config.yaml
+
+# ============================================
+# Fichiers de Test
+# ============================================
+test_*.mp4
+test_*.mov
+sample_*.mp4
+demo_*.mp4
+
+# ============================================
+# Fichiers Windows
+# ============================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ============================================
+# Fichiers macOS
+# ============================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ============================================
+# Fichiers Linux
+# ============================================
+*~
+.directory
+.Trash-*
+
+# ============================================
+# Environnement et Secrets
+# ============================================
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+credentials.json
+
+# ============================================
+# Résultats et Sorties
+# ============================================
+output/
+outputs/
+highlights/
+highlights_*.mp4
+*_preview.mp4
+
+# ============================================
+# Dossiers Spécifiques au Projet
+# ============================================
+# Prévisualisations
+previews/
+
+# Fichiers volumineux (VODs de stream)
+# Commenter si vous voulez versionner des samples
+vods/
+streams/
+
+# Intro/Outro personnalisés (peuvent être volumineux)
+# Décommenter si vous voulez les garder en local uniquement
+# intro.mp4
+# outro.mp4
+
+# ============================================
+# Dépendances
+# ============================================
+node_modules/

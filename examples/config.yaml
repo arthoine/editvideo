@@ -1,0 +1,291 @@
+# EditVideo - Exemples de Configuration
+# ==========================================
+# Ce fichier contient des exemples de configurations pour différents cas d'usage.
+# Copiez les sections qui vous intéressent dans votre config.yaml principal.
+
+# ==========================================
+# EXEMPLE 1 : Configuration Ultra-Performance (GPU puissant)
+# ==========================================
+# Utilisation maximale du GPU pour traitement rapide
+# Idéal pour : RTX 4070 Ti, RTX 4080, RTX 4090
+ultra_performance:
+  performance:
+    use_gpu: true
+    force_gpu: true
+    gpu_device: 0
+    num_threads: -1  # Utiliser tous les cœurs
+    cache_enabled: true
+    video_buffer_size: 1024  # 1 GB buffer
+    max_memory_gb: -1
+
+  editing:
+    video_codec: "h264"
+    encoding_preset: "fast"  # Preset rapide avec GPU
+    crf: 18  # Haute qualité
+    output_fps: 60
+
+  analysis:
+    audio_threshold: 0.65
+    scene_threshold: 25.0
+
+# ==========================================
+# EXEMPLE 2 : Configuration Qualité Maximale
+# ==========================================
+# Privilégie la qualité sur la vitesse
+# Temps de traitement plus long mais meilleur résultat
+qualite_maximale:
+  editing:
+    output_resolution: "1920x1080"
+    output_fps: 60
+    video_codec: "h265"  # H.265 = meilleure compression
+    encoding_preset: "slow"
+    crf: 16  # Quasi-lossless
+    audio_codec: "aac"
+    audio_bitrate: 320  # Audio haute qualité
+
+  performance:
+    use_gpu: true
+    cache_enabled: true
+
+# ==========================================
+# EXEMPLE 3 : Configuration Économie de Ressources
+# ==========================================
+# Pour ordinateurs moins puissants ou sans GPU
+# Réduit la charge CPU/RAM
+economie_ressources:
+  performance:
+    use_gpu: false
+    num_threads: 2
+    cache_enabled: true
+    video_buffer_size: 256
+    max_memory_gb: 4
+
+  editing:
+    output_resolution: "1280x720"  # 720p
+    output_fps: 30
+    video_codec: "h264"
+    encoding_preset: "veryfast"
+    crf: 26  # Qualité moyenne
+    audio_bitrate: 128
+
+  analysis:
+    # Moins de précision = traitement plus rapide
+    audio_window_size: 1.0
+    scene_threshold: 40.0
+
+# ==========================================
+# EXEMPLE 4 : Vidéos Courtes (YouTube Shorts / TikTok)
+# ==========================================
+# Optimisé pour vidéos verticales courtes
+shorts:
+  output:
+    default_duration: 1  # 1 minute max
+
+  editing:
+    aspect_ratio: "9:16"  # Format vertical
+    output_resolution: "1080x1920"
+    output_fps: 30
+    video_codec: "h264"
+    encoding_preset: "medium"
+    crf: 23
+
+  analysis:
+    min_segment_duration: 3  # Segments courts
+    max_segment_duration: 15
+    context_before: 1.0
+    context_after: 1.5
+
+# ==========================================
+# EXEMPLE 5 : Analyse Hyper-Sensible
+# ==========================================
+# Détecte plus de moments (plus de faux positifs possibles)
+hyper_sensible:
+  analysis:
+    audio_threshold: 0.5  # Très sensible
+    scene_threshold: 20.0
+    min_segment_duration: 3
+    max_segment_duration: 20
+    audio_weight: 0.7
+    visual_weight: 0.3
+
+# ==========================================
+# EXEMPLE 6 : Analyse Conservatrice
+# ==========================================
+# Sélectionne uniquement les meilleurs moments (très sélectif)
+conservateur:
+  analysis:
+    audio_threshold: 0.85  # Peu sensible
+    scene_threshold: 40.0
+    min_segment_duration: 10
+    max_segment_duration: 60
+    audio_weight: 0.5
+    visual_weight: 0.5
+
+# ==========================================
+# EXEMPLE 7 : Stream Long Format (30-60 min)
+# ==========================================
+# Pour créer des compilations plus longues
+long_format:
+  output:
+    default_duration: 45  # 45 minutes
+
+  analysis:
+    min_segment_duration: 20
+    max_segment_duration: 120  # Segments jusqu'à 2 min
+    context_before: 5.0
+    context_after: 5.0
+
+  editing:
+    transition_type: "dissolve"
+    transition_duration: 1.0
+
+# ==========================================
+# EXEMPLE 8 : Test Rapide (Debug)
+# ==========================================
+# Pour tester rapidement l'outil sans attendre
+test_rapide:
+  output:
+    default_duration: 2  # 2 minutes seulement
+
+  analysis:
+    audio_threshold: 0.6
+    scene_threshold: 30.0
+    min_segment_duration: 5
+    max_segment_duration: 20
+
+  editing:
+    output_resolution: "1280x720"
+    output_fps: 30
+    encoding_preset: "ultrafast"
+    crf: 28
+
+  performance:
+    cache_enabled: false
+    num_threads: 4
+
+  logging:
+    level: "DEBUG"
+    show_progress_bar: true
+
+# ==========================================
+# EXEMPLE 9 : Export pour Montage Externe
+# ==========================================
+# Génère des métadonnées pour import dans Premiere/DaVinci
+montage_externe:
+  advanced:
+    export_metadata: true
+    metadata_file: "timeline_data.json"
+    export_edl: true
+    edl_format: "cmx3600"
+
+  editing:
+    # Qualité maximale pour re-encodage ultérieur
+    video_codec: "h264"
+    encoding_preset: "slow"
+    crf: 18
+
+# ==========================================
+# EXEMPLE 10 : Intro/Outro Automatiques
+# ==========================================
+# Configure des intro/outro par défaut
+avec_intro_outro:
+  editing:
+    auto_detect_intro_outro: true
+    default_intro_path: "assets/intro.mp4"
+    default_outro_path: "assets/outro.mp4"
+    transition_type: "fade"
+    transition_duration: 1.0
+
+# ==========================================
+# EXEMPLE 11 : Prévisualisation Activée
+# ==========================================
+# Génère toujours une preview basse résolution
+avec_preview:
+  advanced:
+    generate_preview: true
+    preview_resolution: "854x480"
+    preview_fps: 30
+
+  output:
+    keep_temp_files: false
+
+# ==========================================
+# EXEMPLE 12 : Jeu Spécifique - Valorant
+# ==========================================
+valorant:
+  analysis:
+    audio_threshold: 0.65
+    scene_threshold: 25.0
+    min_segment_duration: 8
+    max_segment_duration: 30
+    context_before: 2.0  # Avant le kill
+    context_after: 4.0   # Voir l'ace complet
+
+  output:
+    default_duration: 15
+
+  editing:
+    output_resolution: "1920x1080"
+    output_fps: 60
+
+# ==========================================
+# EXEMPLE 13 : Jeu Spécifique - CS:GO / CS2
+# ==========================================
+csgo:
+  analysis:
+    audio_threshold: 0.70
+    scene_threshold: 28.0
+    min_segment_duration: 10
+    max_segment_duration: 35
+    context_before: 3.0
+    context_after: 3.0
+
+  output:
+    default_duration: 12
+
+# ==========================================
+# EXEMPLE 14 : Jeu Spécifique - Apex Legends
+# ==========================================
+apex:
+  analysis:
+    audio_threshold: 0.68
+    scene_threshold: 30.0
+    min_segment_duration: 12
+    max_segment_duration: 45
+    context_before: 3.0
+    context_after: 5.0  # Finisher, box looting
+
+  output:
+    default_duration: 18
+
+# ==========================================
+# EXEMPLE 15 : Streaming Multi-Jeux
+# ==========================================
+multi_jeux:
+  analysis:
+    audio_threshold: 0.70  # Équilibré
+    scene_threshold: 30.0
+    min_segment_duration: 8
+    max_segment_duration: 40
+    audio_weight: 0.6
+    visual_weight: 0.4
+
+  output:
+    default_duration: 20
+    include_timestamp: true
+
+# ==========================================
+# COMMENT UTILISER CES EXEMPLES
+# ==========================================
+# Méthode 1 : Copier dans config.yaml
+#   Copiez les paramètres souhaités dans votre config.yaml principal
+#
+# Méthode 2 : Utiliser --preset
+#   python main.py --input video.mp4 --preset fps_intense
+#
+# Méthode 3 : Config personnalisée
+#   python main.py --input video.mp4 --config examples/config.yaml --preset valorant
+#
+# Méthode 4 : Créer votre propre config
+#   Copiez config.yaml vers config.perso.yaml et modifiez-le
+#   python main.py --input video.mp4 --config config.perso.yaml
