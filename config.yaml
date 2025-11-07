@@ -321,9 +321,9 @@ presets:
     analysis:
       audio_threshold: 0.68
       scene_threshold: 28.0
-      min_segment_duration: 10
+      min_segment_duration: 8
       max_segment_duration: 50
-      context_before: 3.0  # Plus de contexte pour comprendre la situation
+      context_before: 4.0  # Augmenté de 3→4 (total context = 8s, >= min_duration)
       context_after: 4.0   # Voir le résultat (mort, extraction, loot)
       audio_weight: 0.35
       visual_weight: 0.25
@@ -377,7 +377,7 @@ presets:
       scene_threshold: 20.0
       min_segment_duration: 5
       max_segment_duration: 60
-      context_before: 2.0
+      context_before: 2.5  # Total context = 5s, >= min_duration
       context_after: 2.5
       audio_weight: 0.35
       visual_weight: 0.25
