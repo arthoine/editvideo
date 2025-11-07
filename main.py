@@ -82,7 +82,15 @@ from src.editor import VideoEditor, create_preview
 )
 @click.option(
     "--preset",
-    type=click.Choice(["fps_intense", "fps_tactique", "battle_royale", "moba"]),
+    type=click.Choice([
+        "fps_intense",
+        "fps_tactique",
+        "battle_royale",
+        "moba",
+        "extract_shooter",
+        "quick_extract",
+        "quick_fps"
+    ]),
     default=None,
     help="Preset de configuration par type de jeu.",
 )
