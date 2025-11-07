@@ -420,4 +420,4 @@ presets:
       transition_type: "fade"
       transition_duration: 0.8  # Transition plus douce
       encoding_preset: "medium"
-      crf: 20  # Qualité haute pour YouTube
+      crf: 17  # Qualité MAXIMALE pour YouTube (17 = quasi-lossless visuel)

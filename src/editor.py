@@ -73,16 +73,28 @@ class VideoEditor:
             )
 
             # Configuration de l'encodage
+            crf = self.config.get("editing", {}).get("crf", 17)
+
             output_args = {
                 "vcodec": "libx264",
                 "acodec": "aac",
                 "preset": "ultrafast",  # Rapide pour extraction
+                "crf": str(crf),  # Utilise le même CRF que l'export final
             }
 
-            # Utiliser GPU si disponible
+            # Utiliser GPU si disponible pour extraction haute qualité
             if self.use_gpu:
-                output_args["vcodec"] = "h264_nvenc"
-                output_args["preset"] = "fast"
+                output_args = {
+                    "vcodec": "h264_nvenc",
+                    "acodec": "aac",
+                    "preset": "p7",  # Qualité maximale même pour extraction
+                    "tune": "hq",
+                    "rc": "vbr",
+                    "cq": str(crf),  # Utilise le CRF du config
+                    "b:v": "0",
+                    "spatial_aq": "1",
+                    "temporal_aq": "1",
+                }
 
             output = ffmpeg.output(input_stream, output_path, **output_args)
             ffmpeg.run(output, overwrite_output=True, quiet=True)
@@ -207,14 +219,16 @@ class VideoEditor:
 
             # Encodage
             if self.use_gpu and codec == "h264":
-                # NVENC GPU : utiliser bitrate pour meilleure qualité
+                # NVENC GPU : utiliser CQ pour qualité maximale
                 cmd.extend(["-c:v", "h264_nvenc"])
                 cmd.extend(["-preset", "p7"])  # p7 = qualité maximale NVENC
                 cmd.extend(["-tune", "hq"])    # High quality
                 cmd.extend(["-rc", "vbr"])     # Variable bitrate
-                cmd.extend(["-cq", "19"])      # Constant quality (meilleur que CRF sur NVENC)
+                cmd.extend(["-cq", str(crf)])  # Utilise le CRF du config (17 = quasi-lossless)
                 cmd.extend(["-b:v", "0"])      # Pas de limite bitrate
                 cmd.extend(["-profile:v", "high"])
+                cmd.extend(["-spatial_aq", "1"])    # Adaptive quantization spatiale
+                cmd.extend(["-temporal_aq", "1"])   # Adaptive quantization temporelle
             elif codec == "h264":
                 cmd.extend(["-c:v", "libx264", "-preset", preset, "-crf", str(crf)])
             elif codec == "h265":
@@ -223,8 +237,10 @@ class VideoEditor:
                     cmd.extend(["-preset", "p7"])
                     cmd.extend(["-tune", "hq"])
                     cmd.extend(["-rc", "vbr"])
-                    cmd.extend(["-cq", "19"])
+                    cmd.extend(["-cq", str(crf)])  # Utilise le CRF du config
                     cmd.extend(["-b:v", "0"])
+                    cmd.extend(["-spatial_aq", "1"])
+                    cmd.extend(["-temporal_aq", "1"])
                 else:
                     cmd.extend(["-c:v", "libx265", "-preset", preset, "-crf", str(crf)])
 
