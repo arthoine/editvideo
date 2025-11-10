@@ -127,6 +127,22 @@ from src.editor import VideoEditor, create_preview
     is_flag=True,
     help="Afficher les informations système et quitter.",
 )
+@click.option(
+    "--extract-only",
+    is_flag=True,
+    help="Extraire les clips détectés sans assembler (pour tests rapides).",
+)
+@click.option(
+    "--clips-dir",
+    type=click.Path(),
+    default="extracted_clips",
+    help="Dossier où sauvegarder/charger les clips extraits.",
+)
+@click.option(
+    "--from-clips",
+    is_flag=True,
+    help="Assembler depuis clips déjà extraits (skip analyse).",
+)
 def main(
     input_path: str,
     output_path: str,
@@ -141,6 +157,9 @@ def main(
     preview: bool,
     export_metadata: bool,
     show_system_info: bool,
+    extract_only: bool,
+    clips_dir: str,
+    from_clips: bool,
 ):
     """
     EditVideo - Éditeur Automatique de Streams Gaming avec IA.
@@ -230,43 +249,107 @@ def main(
     start_time = time.time()
 
     try:
+        # Créer le dossier de clips si nécessaire
+        clips_path = Path(clips_dir)
+        clips_path.mkdir(parents=True, exist_ok=True)
+
+        # ===== MODE: ASSEMBLAGE DEPUIS CLIPS EXISTANTS =====
+        if from_clips:
+            logger.info("=" * 80)
+            logger.info("MODE: ASSEMBLAGE DEPUIS CLIPS EXTRAITS")
+            logger.info("=" * 80)
+
+            # Charger les métadonnées
+            metadata_file = clips_path / "metadata.json"
+            if not metadata_file.exists():
+                click.echo(f"❌ Fichier metadata.json non trouvé dans {clips_dir}", err=True)
+                click.echo("   Lancez d'abord avec --extract-only pour extraire les clips.", err=True)
+                sys.exit(1)
+
+            import json
+            with open(metadata_file, "r", encoding="utf-8") as f:
+                metadata = json.load(f)
+
+            # Reconstruire les segments depuis metadata
+            from src.analyzer import Segment
+            selected_segments = [Segment(**seg) for seg in metadata["selected_segments"]]
+
+            logger.info(f"✓ {len(selected_segments)} clips chargés depuis {clips_dir}")
+            print_segments_summary(selected_segments)
+
+            # Trouver les clips extraits
+            clip_files = sorted(clips_path.glob("clip_*.mp4"))
+            if len(clip_files) != len(selected_segments):
+                click.echo(f"⚠️  Nombre de clips ({len(clip_files)}) != segments ({len(selected_segments)})", err=True)
+
         # ===== PHASE 1: ANALYSE =====
-        logger.info("=" * 80)
-        logger.info("PHASE 1 : ANALYSE VIDÉO")
-        logger.info("=" * 80)
+        else:
+            logger.info("=" * 80)
+            logger.info("PHASE 1 : ANALYSE VIDÉO")
+            logger.info("=" * 80)
 
-        analyzer = VideoAnalyzer(
-            video_path=input_path,
-            config=config,
-            cache_manager=cache_manager,
-        )
-
-        # Analyser la vidéo
-        segments = analyzer.analyze(use_cache=not no_cache)
-
-        if not segments:
-            click.echo("❌ Aucun segment détecté dans la vidéo.", err=True)
-            sys.exit(1)
-
-        # Sélectionner les meilleurs segments
-        selected_segments = analyzer.select_best_segments(
-            target_duration=duration,
-            segments=segments,
-        )
-
-        if not selected_segments:
-            click.echo("❌ Aucun segment sélectionné pour la durée cible.", err=True)
-            sys.exit(1)
-
-        # Afficher le résumé
-        print_segments_summary(selected_segments)
-
-        # Exporter les métadonnées si demandé
-        if export_metadata:
-            metadata_file = config.get("advanced", {}).get(
-                "metadata_file", "analysis_metadata.json"
+            analyzer = VideoAnalyzer(
+                video_path=input_path,
+                config=config,
+                cache_manager=cache_manager,
             )
-            analyzer.export_metadata(metadata_file, selected_segments)
+
+            # Analyser la vidéo
+            segments = analyzer.analyze(use_cache=not no_cache)
+
+            if not segments:
+                click.echo("❌ Aucun segment détecté dans la vidéo.", err=True)
+                sys.exit(1)
+
+            # Sélectionner les meilleurs segments
+            selected_segments = analyzer.select_best_segments(
+                target_duration=duration,
+                segments=segments,
+            )
+
+            if not selected_segments:
+                click.echo("❌ Aucun segment sélectionné pour la durée cible.", err=True)
+                sys.exit(1)
+
+            # Afficher le résumé
+            print_segments_summary(selected_segments)
+
+            # Exporter les métadonnées TOUJOURS (pour --extract-only)
+            metadata_file = clips_path / "metadata.json"
+            analyzer.export_metadata(str(metadata_file), selected_segments)
+            logger.info(f"✓ Métadonnées exportées : {metadata_file}")
+
+            # ===== MODE: EXTRACTION SEULE =====
+            if extract_only:
+                logger.info("=" * 80)
+                logger.info("MODE: EXTRACTION DES CLIPS")
+                logger.info("=" * 80)
+
+                temp_dir = config.get("output", {}).get("temp_dir", "temp")
+                editor = VideoEditor(
+                    config=config,
+                    gpu_manager=gpu_manager,
+                    temp_dir=temp_dir,
+                )
+
+                logger.info(f"Extraction de {len(selected_segments)} clips dans {clips_dir}...")
+
+                for i, segment in enumerate(selected_segments):
+                    clip_output = clips_path / f"clip_{i:04d}.mp4"
+                    logger.info(f"  [{i+1}/{len(selected_segments)}] Extraction : {segment.start_time:.1f}s → {segment.end_time:.1f}s")
+
+                    success = editor.extract_segment(input_path, segment, str(clip_output))
+
+                    if not success:
+                        logger.warning(f"  ⚠️  Échec extraction clip {i}")
+
+                elapsed = time.time() - start_time
+                logger.info("=" * 80)
+                logger.info(f"✅ EXTRACTION TERMINÉE en {elapsed:.1f}s")
+                logger.info(f"   {len(selected_segments)} clips sauvegardés dans : {clips_dir}")
+                logger.info(f"   Pour assembler : --from-clips --clips-dir {clips_dir}")
+                logger.info("=" * 80)
+                sys.exit(0)
 
         # ===== PHASE 2: MONTAGE =====
         logger.info("=" * 80)
@@ -280,16 +363,37 @@ def main(
             temp_dir=temp_dir,
         )
 
-        # Éditer la vidéo
-        show_progress = config.get("logging", {}).get("show_progress_bar", True)
-        success = editor.edit_video(
-            video_path=input_path,
-            segments=selected_segments,
-            output_path=output_path,
-            intro_path=intro,
-            outro_path=outro,
-            show_progress=show_progress,
-        )
+        # Assemblage depuis clips existants ou extraction + assemblage
+        if from_clips:
+            # Assembler depuis clips déjà extraits
+            clip_files = [str(clips_path / f"clip_{i:04d}.mp4") for i in range(len(selected_segments))]
+            logger.info(f"Assemblage de {len(clip_files)} clips pré-extraits...")
+
+            # Ajouter intro/outro si spécifié
+            parts = []
+            if intro and Path(intro).exists():
+                parts.append(intro)
+                logger.info(f"Ajout de l'intro : {intro}")
+
+            parts.extend(clip_files)
+
+            if outro and Path(outro).exists():
+                parts.append(outro)
+                logger.info(f"Ajout de l'outro : {outro}")
+
+            success = editor.concatenate_segments(parts, output_path)
+
+        else:
+            # Extraction + assemblage standard
+            show_progress = config.get("logging", {}).get("show_progress_bar", True)
+            success = editor.edit_video(
+                video_path=input_path,
+                segments=selected_segments,
+                output_path=output_path,
+                intro_path=intro,
+                outro_path=outro,
+                show_progress=show_progress,
+            )
 
         if not success:
             click.echo("❌ Échec du montage vidéo.", err=True)
