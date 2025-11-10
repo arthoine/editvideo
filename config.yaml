@@ -422,7 +422,7 @@ presets:
       llava_frame_sampling: 90
       llava_max_frames: -1  # -1 = PAS DE LIMITE, analyse TOUTE la vidéo
       llava_intensity_threshold: 50.0  # Plus permissif = plus de moments capturés
-      min_segment_score: 70.0  # Score minimum pour extraction (élimine clips sans LLaVA)
+      min_segment_score: 60.0  # Score minimum pour extraction (élimine clips sans LLaVA)
     editing:
       transition_type: "fade"
       transition_duration: 0.8  # Transition plus douce
