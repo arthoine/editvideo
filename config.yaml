@@ -401,6 +401,7 @@ presets:
     # COMBATS COMPLETS: Pour Arc Raiders, Tarkov - séquences longues
     # Capture les combats ENTIERS (2-3 min) avec setup et résultat
     # Optimisé pour YouTube (narration complète)
+    # POIDS: 56% LLaVA (priorité IA), 22% audio, 22% visuel
     analysis:
       audio_threshold: 0.65  # Permissif pour capturer tout le combat
       scene_threshold: 25.0
@@ -409,9 +410,9 @@ presets:
       context_before: 8.0   # 8s avant = voir l'approche/setup
       context_after: 8.0    # 8s après = voir résultat/loot/mort
       overlap_prevention_margin: 3.0  # Plus de marge pour éviter jump cuts
-      audio_weight: 0.35
-      visual_weight: 0.25
-      llava_weight: 0.40
+      audio_weight: 0.22    # 22% - Son (gunshots, explosions)
+      visual_weight: 0.22   # 22% - Changements visuels
+      llava_weight: 0.56    # 56% - IA multimodale (PRIORITAIRE)
       llava_prompt_type: "extract_shooter"
       llava_frame_sampling: 90
       llava_max_frames: 200
