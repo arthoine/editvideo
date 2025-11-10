@@ -467,6 +467,7 @@ class VideoAnalyzer:
         overlap_margin = self.config.get("analysis", {}).get(
             "overlap_prevention_margin", 1.0
         )
+        min_score = self.config.get("analysis", {}).get("min_segment_score", 0.0)
 
         selected_segments = []
         total_duration = 0.0
@@ -475,13 +476,21 @@ class VideoAnalyzer:
         no_limit = (target_duration <= 0)
 
         if no_limit:
-            logger.info("Sélection de TOUS les meilleurs segments (pas de limite de durée)...")
+            logger.info(
+                f"Sélection de TOUS les segments avec score >= {min_score:.1f} "
+                f"(pas de limite de durée)..."
+            )
         else:
             logger.info(
-                f"Sélection des meilleurs segments pour {target_duration} min ({SystemUtils.format_duration(target_seconds)})..."
+                f"Sélection des meilleurs segments (score >= {min_score:.1f}) "
+                f"pour {target_duration} min ({SystemUtils.format_duration(target_seconds)})..."
             )
 
         for segment in segments:
+            # Filtrer par score minimum
+            if segment.combined_score < min_score:
+                continue
+
             # Vérifier si on a atteint la durée cible (sauf si no_limit)
             if not no_limit and total_duration >= target_seconds:
                 break
@@ -506,10 +515,17 @@ class VideoAnalyzer:
         # Trier chronologiquement
         selected_segments.sort(key=lambda s: s.start_time)
 
+        # Compter les segments filtrés par score
+        filtered_count = sum(1 for s in segments if s.combined_score < min_score)
+
         logger.info(
             f"{len(selected_segments)} segments sélectionnés "
             f"(durée totale: {SystemUtils.format_duration(total_duration)})"
         )
+        if filtered_count > 0:
+            logger.info(
+                f"{filtered_count} segments filtrés (score < {min_score:.1f})"
+            )
 
         return selected_segments
 
