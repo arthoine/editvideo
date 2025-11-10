@@ -42,13 +42,13 @@ analysis:
 
   # Scoring
   # Poids du score audio dans le calcul final (0.0 - 1.0)
-  # Sans LLaVA : audio=0.6, visuel=0.4
+  # Sans LLaVA : audio=0.7, visuel=0.3 (audio prioritaire pour FPS)
   # Avec LLaVA (extract_shooter) : audio=0.35, visuel=0.25, llava=0.40
-  # Audio crucial pour gunfights, LLaVA pour situations complexes
-  audio_weight: 0.35
+  # Audio crucial pour gunfights, détecte kills/explosions/réactions
+  audio_weight: 0.7
 
   # Poids du score visuel dans le calcul final (0.0 - 1.0)
-  visual_weight: 0.25
+  visual_weight: 0.3
 
   # Poids du score LLaVA (IA multimodale) dans le calcul final (0.0 - 1.0)
   # Utilisé uniquement si use_llava est activé
@@ -61,7 +61,7 @@ analysis:
   # Activer l'analyse LLaVA pour détection intelligente des moments clés
   # Nécessite : Ollama installé + modèle llava:7b téléchargé
   # Installation : pip install ollama && ollama pull llava:7b
-  use_llava: true
+  use_llava: false
 
   # Modèle LLaVA à utiliser (llava:7b, llava:13b, llava:34b)
   llava_model: "llava:7b"
