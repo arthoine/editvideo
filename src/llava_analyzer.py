@@ -524,13 +524,17 @@ class LLaVAAnalyzer:
 
         # Calculer le nombre de frames à analyser
         frames_to_analyze = (total_frames // sample_rate) + 1
-        if max_frames:
+        if max_frames and max_frames > 0:
             frames_to_analyze = min(frames_to_analyze, max_frames)
-
-        logger.info(
-            f"Analyse LLaVA : {frames_to_analyze} frames "
-            f"(1 frame / {sample_rate}, FPS={fps:.1f})"
-        )
+            logger.info(
+                f"Analyse LLaVA : {frames_to_analyze} frames (LIMITE) "
+                f"(1 frame / {sample_rate}, FPS={fps:.1f})"
+            )
+        else:
+            logger.info(
+                f"Analyse LLaVA : {frames_to_analyze} frames (TOUTES) "
+                f"(1 frame / {sample_rate}, FPS={fps:.1f})"
+            )
 
         iterator = tqdm(
             total=frames_to_analyze,
@@ -558,8 +562,9 @@ class LLaVAAnalyzer:
                     if iterator:
                         iterator.update(1)
 
-                    # Limiter si max_frames spécifié
-                    if max_frames and analyzed_count >= max_frames:
+                    # Limiter si max_frames spécifié (et > 0)
+                    if max_frames and max_frames > 0 and analyzed_count >= max_frames:
+                        logger.info(f"Limite de {max_frames} frames atteinte, arrêt de l'analyse LLaVA")
                         break
 
                 frame_count += 1
