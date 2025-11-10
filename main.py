@@ -41,7 +41,7 @@ from src.editor import VideoEditor, create_preview
     "--input",
     "-i",
     "input_path",
-    required=False,
+    required=True,
     type=click.Path(exists=True),
     help="Chemin vers le fichier vidéo source (VOD).",
 )
@@ -185,11 +185,6 @@ def main(
     if show_system_info:
         print_system_info(gpu_manager)
         sys.exit(0)
-
-    # Validation: --input requis sauf si --from-clips
-    if not from_clips and not input_path:
-        click.echo("❌ Erreur : --input/-i est requis (sauf si --from-clips est utilisé)", err=True)
-        sys.exit(1)
 
     # Désactiver GPU si demandé
     if no_gpu:
