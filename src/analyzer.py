@@ -471,13 +471,19 @@ class VideoAnalyzer:
         selected_segments = []
         total_duration = 0.0
 
-        logger.info(
-            f"Sélection des meilleurs segments pour {target_duration} min ({SystemUtils.format_duration(target_seconds)})..."
-        )
+        # Si target_duration = 0, prendre TOUS les segments (pas de limite)
+        no_limit = (target_duration <= 0)
+
+        if no_limit:
+            logger.info("Sélection de TOUS les meilleurs segments (pas de limite de durée)...")
+        else:
+            logger.info(
+                f"Sélection des meilleurs segments pour {target_duration} min ({SystemUtils.format_duration(target_seconds)})..."
+            )
 
         for segment in segments:
-            # Vérifier si on a atteint la durée cible
-            if total_duration >= target_seconds:
+            # Vérifier si on a atteint la durée cible (sauf si no_limit)
+            if not no_limit and total_duration >= target_seconds:
                 break
 
             # Vérifier le chevauchement avec les segments déjà sélectionnés
@@ -492,8 +498,8 @@ class VideoAnalyzer:
                     break
 
             if not overlaps:
-                # Vérifier si l'ajout de ce segment ne dépasse pas trop la cible
-                if total_duration + segment.duration <= target_seconds * 1.1:
+                # Vérifier si l'ajout de ce segment ne dépasse pas trop la cible (sauf si no_limit)
+                if no_limit or total_duration + segment.duration <= target_seconds * 1.1:
                     selected_segments.append(segment)
                     total_duration += segment.duration
 
